@@ -12,7 +12,7 @@ const MainPage = () => {
     const accessToken = sessionStorage.getItem("accessToken");
     try {
       console.log(accessToken);
-      const response = await fetch("http://localhost:8000/api/courses/courses", {
+      const response = await fetch("https://courses-platform-backend.onrender.com/api/courses/courses", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

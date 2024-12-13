@@ -11,31 +11,31 @@ const LoginPage = () => {
 
     const login = async (username, password) => {
         try {
-            const response = await fetch("http://127.0.0.1:8000/api/users/login/", {
+            const response = await fetch("https://courses-platform-backend.onrender.com/api/users/login/", {
                 method: "POST",
                 headers: {
                 "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ username, password }),
             });
-    
-            console.log(response);
-    
-            if (!response.ok) {
-              throw new Error("An error occurred while logging in");
-            }
-    
+
             const data = await response.json();
+            console.log(response);
+
+            if (!response.ok) {
+                throw new Error("An error occurred while logging in");
+            }
+
             sessionStorage.setItem("accessToken", data.access);
             sessionStorage.setItem("refreshToken", data.refresh);
             sessionStorage.setItem("username", username);
-    
+
             navigate("/");
         } catch (error) {
             setError("Your username or password is incorrect");
             console.log(error);
         }
-      };
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();

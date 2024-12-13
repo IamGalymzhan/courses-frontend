@@ -15,7 +15,7 @@ const RegisterPage = () => {
 
   const register = async (username, email, password) => {
     try {
-      const response = await fetch("http://localhost:8000/api/users/register/", {
+      const response = await fetch("https://courses-platform-backend.onrender.com/api/users/register/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -34,7 +34,7 @@ const RegisterPage = () => {
 
   const login = async (username, password) => {
     try {
-        const response = await fetch("http://localhost:8000/api/users/login/", {
+        const response = await fetch("https://courses-platform-backend.onrender.com/api/users/login/", {
             method: "POST",
             headers: {
             "Content-Type": "application/json",
