@@ -6,7 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import CoursePage from "./pages/CoursePage";
 import LessonPage from "./pages/LessonPage";
 import AboutPage from "./pages/AboutPage";
-
+import ProfilePage from "./pages/ProfilePage";
 
 const App = () => {
   return (
@@ -15,8 +15,12 @@ const App = () => {
         <Route path="/" element={<MainPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/course/:id" element={<CoursePage />} />
-        <Route path="/course/:courseId/lesson/:lessonId" element={<LessonPage />} />
+        <Route
+          path="/course/:courseId/lesson/:lessonId"
+          element={<LessonPage />}
+        />
         <Route path="/about" element={<AboutPage />} />
       </Routes>
     </Router>
