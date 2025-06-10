@@ -1,10 +1,30 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
+import {
+  isApiKeyConfigured,
+  getGeminiApiKey,
+  getGeminiConfig,
+  getSafetySettings,
+} from "../config/apiConfig";
 
-const AIChatButton = () => {
+const AIChatButton = ({ courseId, lessonId, courseName, lessonTitle }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  // Check if API key is configured
+  const apiKeyConfigured = isApiKeyConfigured();
+
+  // Scroll to bottom when new messages are added
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
@@ -14,21 +34,155 @@ const AIChatButton = () => {
     setInput(e.target.value);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (input.trim() === "") return;
+  const callGemini = async (userMessage, conversationHistory) => {
+    if (!apiKeyConfigured) {
+      throw new Error("API кілті конфигурацияда орнатылмаған");
+    }
 
-    // Add user message
-    const newMessages = [...messages, { text: input, sender: "user" }];
+    const apiKey = getGeminiApiKey();
+    const config = getGeminiConfig();
+    const safetySettings = getSafetySettings();
 
-    // Add AI response
-    newMessages.push({
-      text: "Chatbot қолдану үшін API кілтті орнатыңыз",
-      sender: "ai",
+    // Build context for the AI
+    const systemContext = `Сіз OquSpace онлайн оқу платформасының AI көмекшісісіз. Сіздің міндетіңіз - студенттерге олардың оқу процесінде көмектесу.
+
+Ағымдағы контекст:
+${courseName ? `- Курс: ${courseName}` : ""}
+${lessonTitle ? `- Сабақ: ${lessonTitle}` : ""}
+${courseId ? `- Курс ID: ${courseId}` : ""}
+${lessonId ? `- Сабақ ID: ${lessonId}` : ""}
+
+Сіз мына тақырыптарда көмектесе аласыз:
+- Сабақ мазмұнын түсіндіру
+- Тапсырмалар мен тесттерге көмек
+- Оқу стратегиялары
+- Техникалық мәселелер
+- Платформаны пайдалану
+
+Жауаптарыңыз қазақ тілінде, дос пен көмекші рухында болуы керек. Егер сұрақ оқумен байланысты болмаса, оқуға бағыттауға тырысыңыз.`;
+
+    // Build conversation history for Gemini
+    let conversationText = systemContext + "\n\n";
+
+    // Add conversation history
+    conversationHistory.forEach((msg) => {
+      if (msg.sender === "user") {
+        conversationText += `Пайдаланушы: ${msg.text}\n`;
+      } else {
+        conversationText += `AI көмекші: ${msg.text}\n`;
+      }
     });
 
-    setMessages(newMessages);
+    // Add current user message
+    conversationText += `Пайдаланушы: ${userMessage}\nAI көмекші: `;
+
+    const response = await fetch(`${config.baseUrl}?key=${apiKey}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: conversationText,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: config.temperature,
+          topK: config.topK,
+          topP: config.topP,
+          maxOutputTokens: config.maxTokens,
+        },
+        safetySettings: safetySettings,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 400) {
+        throw new Error(
+          "API кілті дұрыс емес немесе сұрау форматы қате. Конфигурацияны тексеріңіз."
+        );
+      } else if (response.status === 403) {
+        throw new Error("API кілтіне рұқсат жоқ немесе квота бітті.");
+      } else if (response.status === 429) {
+        throw new Error(
+          "Сұрау лимиті асып кетті. Біраз уақыттан кейін қайталаңыз."
+        );
+      } else {
+        throw new Error(
+          `API қатесі: ${errorData.error?.message || "Белгісіз қате"}`
+        );
+      }
+    }
+
+    const data = await response.json();
+
+    if (
+      data.candidates &&
+      data.candidates.length > 0 &&
+      data.candidates[0].content
+    ) {
+      return (
+        data.candidates[0].content.parts[0].text ||
+        "Кешіріңіз, жауап ала алмадым."
+      );
+    } else {
+      throw new Error("Gemini API-дан дұрыс жауап алынбады.");
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (input.trim() === "" || isLoading) return;
+
+    if (!apiKeyConfigured) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: "API кілті конфигурацияда орнатылмаған. Әкімшіге хабарласыңыз.",
+          sender: "ai",
+          isError: true,
+        },
+      ]);
+      return;
+    }
+
+    const userMessage = input.trim();
     setInput("");
+    setIsLoading(true);
+
+    // Add user message immediately
+    const newMessages = [...messages, { text: userMessage, sender: "user" }];
+    setMessages(newMessages);
+
+    try {
+      const aiResponse = await callGemini(userMessage, messages);
+      setMessages((prev) => [...prev, { text: aiResponse, sender: "ai" }]);
+    } catch (error) {
+      console.error("Gemini API Error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: `Қате: ${error.message}`,
+          sender: "ai",
+          isError: true,
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
   };
 
   return (
@@ -36,31 +190,80 @@ const AIChatButton = () => {
       {isOpen && (
         <ChatContainer>
           <ChatHeader>
-            <div>AI Көмекші</div>
-            <CloseButton onClick={toggleChat}>×</CloseButton>
+            <div>AI Көмекші (Gemini)</div>
+            <HeaderActions>
+              {!apiKeyConfigured && (
+                <ConfigWarning title="API кілті конфигурацияда орнатылмаған">
+                  ⚠️
+                </ConfigWarning>
+              )}
+              <CloseButton onClick={toggleChat}>×</CloseButton>
+            </HeaderActions>
           </ChatHeader>
+
           <MessagesContainer>
-            {messages.length === 0 ? (
+            {!apiKeyConfigured && (
+              <ConfigurationMessage>
+                <ConfigIcon>⚙️</ConfigIcon>
+                <ConfigText>
+                  AI көмекшісін пайдалану үшін конфигурация файлында Gemini API
+                  кілтін орнатыңыз.
+                  <br />
+                  <ConfigPath>src/config/apiConfig.js</ConfigPath> файлын
+                  өңдеңіз.
+                </ConfigText>
+              </ConfigurationMessage>
+            )}
+
+            {messages.length === 0 && apiKeyConfigured ? (
               <WelcomeMessage>
-                Сәлеметсіз бе! Мен сіздің AI көмекшіңізбін. Бүгін сізге қалай
-                көмектесе аламын?
+                Сәлеметсіз бе! Мен сіздің AI көмекшіңізбін (Google Gemini
+                арқылы).
+                {courseName && ` "${courseName}" курсы бойынша`}
+                {lessonTitle && ` "${lessonTitle}" сабағы туралы`}{" "}
+                сұрақтарыңызға жауап бере аламын. Бүгін сізге қалай көмектесе
+                аламын?
               </WelcomeMessage>
             ) : (
               messages.map((message, index) => (
-                <Message key={index} sender={message.sender}>
+                <Message
+                  key={index}
+                  sender={message.sender}
+                  isError={message.isError}
+                >
                   {message.text}
                 </Message>
               ))
             )}
+            {isLoading && (
+              <Message sender="ai">
+                <LoadingDots>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </LoadingDots>
+              </Message>
+            )}
+            <div ref={messagesEndRef} />
           </MessagesContainer>
+
           <InputForm onSubmit={handleSubmit}>
             <ChatInput
               type="text"
-              placeholder="Хабарлама жазыңыз..."
+              placeholder={
+                apiKeyConfigured
+                  ? "Хабарлама жазыңыз..."
+                  : "API кілті конфигурацияда орнатылмаған..."
+              }
               value={input}
               onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              disabled={!apiKeyConfigured || isLoading}
             />
-            <SendButton type="submit">
+            <SendButton
+              type="submit"
+              disabled={!apiKeyConfigured || isLoading || !input.trim()}
+            >
               <SendIcon>↑</SendIcon>
             </SendButton>
           </InputForm>
@@ -69,6 +272,7 @@ const AIChatButton = () => {
       <ChatButtonContainer>
         <ChatButtonCircle onClick={toggleChat}>
           <ChatIcon>💬</ChatIcon>
+          {!apiKeyConfigured && <ApiKeyIndicator>!</ApiKeyIndicator>}
         </ChatButtonCircle>
       </ChatButtonContainer>
     </>
@@ -154,6 +358,17 @@ const ChatHeader = styled.div`
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 `;
 
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const ConfigWarning = styled.span`
+  font-size: 16px;
+  cursor: help;
+`;
+
 const CloseButton = styled.button`
   background: none;
   border: none;
@@ -181,6 +396,36 @@ const MessagesContainer = styled.div`
   flex-direction: column;
   gap: 12px;
   background-color: #f8f9fa;
+`;
+
+const ConfigurationMessage = styled.div`
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  margin: 15px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+`;
+
+const ConfigIcon = styled.div`
+  font-size: 24px;
+  margin-bottom: 8px;
+`;
+
+const ConfigText = styled.div`
+  color: #856404;
+  font-size: 14px;
+  line-height: 1.4;
+`;
+
+const ConfigPath = styled.code`
+  background-color: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  color: #495057;
 `;
 
 const WelcomeMessage = styled.div`
@@ -213,11 +458,12 @@ const Message = styled.div`
     box-shadow: 0 1px 2px rgba(48, 102, 190, 0.2);
   `
       : `
-    background-color: white;
+    background-color: ${props.isError ? "#fee" : "white"};
     align-self: flex-start;
     border-bottom-left-radius: 4px;
-    color: #333;
+    color: ${props.isError ? "#d63384" : "#333"};
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-left: ${props.isError ? "3px solid #d63384" : "none"};
   `}
 `;
 
@@ -244,33 +490,85 @@ const ChatInput = styled.input`
     background-color: white;
     box-shadow: 0 0 0 2px rgba(48, 102, 190, 0.1);
   }
+
+  &:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+  }
 `;
 
 const SendButton = styled.button`
-  background-color: #3066be;
+  background-color: ${(props) => (props.disabled ? "#ccc" : "#3066be")};
   color: white;
   border: none;
   border-radius: 50%;
   width: 40px;
   height: 40px;
   margin-left: 10px;
-  cursor: pointer;
+  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
 
   &:hover {
-    background-color: #254d95;
-    transform: scale(1.05);
+    background-color: ${(props) => (props.disabled ? "#ccc" : "#254d95")};
+    transform: ${(props) => (props.disabled ? "none" : "scale(1.05)")};
   }
 
   &:active {
-    transform: scale(0.95);
+    transform: ${(props) => (props.disabled ? "none" : "scale(0.95)")};
   }
 `;
 
 const SendIcon = styled.span`
   font-size: 18px;
   font-weight: bold;
+`;
+
+const ApiKeyIndicator = styled.span`
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+`;
+
+const LoadingDots = styled.div`
+  display: flex;
+  gap: 4px;
+
+  span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #3066be;
+    animation: bounce 1.4s ease-in-out infinite both;
+
+    &:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+    &:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+  }
+
+  @keyframes bounce {
+    0%,
+    80%,
+    100% {
+      transform: scale(0);
+    }
+    40% {
+      transform: scale(1);
+    }
+  }
 `;

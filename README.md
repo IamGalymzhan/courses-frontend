@@ -1,70 +1,140 @@
-# Getting Started with Create React App
+# OquSpace - Online Learning Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
 
-## Available Scripts
+OquSpace is a modern online learning platform built with React that provides educational courses in Kazakh language. The platform offers an intuitive interface for users to browse courses, access lessons, take quizzes, and track their learning progress.
 
-In the project directory, you can run:
+## Table of Contents
 
-### `npm start`
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Running the Application](#running-the-application)
+- [Project Structure](#project-structure)
+- [Key Components](#key-components)
+- [API Integration](#api-integration)
+- [Authentication](#authentication)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Features
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **User Authentication**: Secure registration and login functionality
+- **Course Catalog**: Browse and search through available courses
+- **Lesson Viewer**: Access course lessons with various content formats
+- **Quiz System**: Interactive quizzes to test knowledge
+- **Profile Management**: View and update user profile and progress
+- **AI Chat Assistant**: Get help and guidance while learning
+- **Test Taking**: Take tests and view results
+- **Responsive Design**: Access from any device (desktop, tablet, mobile)
 
-### `npm test`
+## Technology Stack
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **Frontend**: React (v19.0.0)
+- **Routing**: React Router (v7.0.2)
+- **Styling**: Styled Components (v6.1.13)
+- **State Management**: React hooks for local state
+- **API Integration**: Custom fetch-based service layer
+- **Testing**: React Testing Library
 
-### `npm run build`
+## Getting Started
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Prerequisites
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- Node.js (v14 or higher)
+- npm (v6 or higher)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Installation
 
-### `npm run eject`
+1. Clone the repository
+2. Install dependencies:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```
+npm install
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Running the Application
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+1. Start the development server:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```
+npm start
+```
 
-## Learn More
+2. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Project Structure
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+src/
+├── components/        # Reusable UI components
+├── pages/             # Application pages/routes
+├── services/          # API integration and services
+├── hooks/             # Custom React hooks
+├── assets/            # Static assets like images
+├── App.js             # Main application component and routing
+└── index.js           # Application entry point
+```
 
-### Code Splitting
+## Key Components
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Pages
 
-### Analyzing the Bundle Size
+- **MainPage**: Home page displaying course catalog and featured content
+- **LoginPage/RegisterPage**: User authentication
+- **ProfilePage**: User profile management
+- **CoursePage**: Details about a specific course
+- **LessonPage**: View lesson content
+- **AboutPage**: Information about the platform
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Components
 
-### Making a Progressive Web App
+- **Header**: Navigation and user menu
+- **Quiz**: Interactive quiz component
+- **TestTaker/TestEditor/TestResults**: Test-related components
+- **AIChatButton**: AI assistant for learning support
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## API Integration
 
-### Advanced Configuration
+The application communicates with a backend API (running at http://127.0.0.1:8000/api by default) through a dedicated service layer. The main services include:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- **authService**: Handles user authentication
+- **courseService**: Manages course-related operations
+- **testService**: Handles quiz and test functionality
 
-### Deployment
+## Authentication
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Authentication is implemented using JWT tokens stored in session storage. The auth flow includes:
 
-### `npm run build` fails to minify
+- Login/registration
+- Token management
+- Protected routes
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Testing
+
+Run tests with:
+
+```
+npm test
+```
+
+## Deployment
+
+Build the production-ready application:
+
+```
+npm run build
+```
+
+The build artifacts will be stored in the `build/` folder, ready to be deployed to any static hosting service.
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a pull request

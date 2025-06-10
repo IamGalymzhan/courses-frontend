@@ -5,6 +5,7 @@ import styled from "styled-components";
 import Header from "../components/Header";
 import { courseService } from "../services";
 import { AIChatButton } from "../components/index";
+import { convertToEmbedUrl, isValidYouTubeUrl } from "../utils/videoUtils";
 
 const LessonPage = () => {
   const navigate = useNavigate();
@@ -155,13 +156,19 @@ const LessonPage = () => {
             <iframe
               width="900"
               height="500"
-              src={data.video_url}
+              src={convertToEmbedUrl(data.video_url)}
               title="Сабақ бейнесі"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               referrerPolicy="strict-origin-when-cross-origin"
               allowFullScreen
             ></iframe>
+            {!isValidYouTubeUrl(data.video_url) && (
+              <VideoWarning>
+                Ескерту: Бұл YouTube бейнесі емес. Кейбір функциялар жұмыс
+                істемеуі мүмкін.
+              </VideoWarning>
+            )}
           </VideoContainer>
 
           {data.has_test ? (
@@ -183,7 +190,11 @@ const LessonPage = () => {
             </QuizPlaceholder>
           )}
         </ContentContainer>
-        <AIChatButton />
+        <AIChatButton
+          courseId={courseId}
+          lessonId={lessonId}
+          lessonTitle={data.title}
+        />
       </Container>
     </>
   );
@@ -247,17 +258,16 @@ const Title = styled.h1`
 
 const VideoContainer = styled.div`
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   margin-bottom: 40px;
   width: 100%;
   height: auto;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  overflow: hidden;
 
   iframe {
     max-width: 100%;
     border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   }
 
   @media (max-width: 980px) {
@@ -327,4 +337,18 @@ const QuizPlaceholder = styled.div`
   color: #666;
   font-size: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+`;
+
+const VideoWarning = styled.div`
+  width: 100%;
+  max-width: 800px;
+  margin-top: 10px;
+  padding: 15px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  text-align: center;
+  color: #856404;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 `;

@@ -4,6 +4,7 @@ import styled from "styled-components";
 import Header from "../components/Header";
 import { courseService } from "../services";
 import useAuth from "../hooks/useAuth";
+import { AIChatButton } from "../components/index";
 
 const CoursePage = () => {
   const navigate = useNavigate();
@@ -336,6 +337,7 @@ const CoursePage = () => {
           </ModalOverlay>
         )}
       </Container>
+      <AIChatButton courseId={id} courseName={title} />
     </>
   );
 };
